@@ -16,6 +16,7 @@ pyjsend = "*"
 sentry-sdk = "*"
 pytest = "*"
 pytest-cov = "*"
+usaddress = "*"
 
 [requires]
 python_version = "3.7"

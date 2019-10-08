@@ -1,0 +1,45 @@
+{
+    "displayFieldName": "street_name",
+    "fieldAliases": {
+        "blklot": "blklot",
+        "block_num": "block_num",
+        "lot_num": "lot_num",
+        "ADDRESS": "ADDRESS"
+    },
+    "fields": [
+        {
+            "name": "blklot",
+            "type": "esriFieldTypeString",
+            "alias": "blklot",
+            "length": 9
+        },
+        {
+            "name": "block_num",
+            "type": "esriFieldTypeString",
+            "alias": "block_num",
+            "length": 5
+        },
+        {
+            "name": "lot_num",
+            "type": "esriFieldTypeString",
+            "alias": "lot_num",
+            "length": 4
+        },
+        {
+            "name": "ADDRESS",
+            "type": "esriFieldTypeString",
+            "alias": "ADDRESS",
+            "length": 254
+        }
+    ],
+    "features": [
+        {
+            "attributes": {
+                "blklot": "0207032",
+                "block_num": "0207",
+                "lot_num": "032",
+                "ADDRESS": "600 MONTGOMERY ST"
+            }
+        }
+    ]
+}
