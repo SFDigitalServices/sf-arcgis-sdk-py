@@ -80,3 +80,35 @@ def test_get_fields_by_address_suggestion_multi_example(client):
         assert parcel['attributes']['blklot']
         assert parcel['attributes']['ADDRESS']
     assert 'geometry' not in content['data']['parcels'][0]
+
+def test_get_fields_by_parcel_example(client):
+    """Test test_get_fields_by_parcel_example"""
+    parcel = '3512008'
+
+    response = client.simulate_get(
+        '/page/get_fields_by_parcel_example',
+        params={'parcel':parcel, 'returnGeometry':True, 'outFields':'block_num,lot_num,ADDRESS',})
+    assert response.status_code == 200
+
+    content = json.loads(response.content)
+
+    assert jsend.is_success(content)
+    assert len(content['data']['parcels']) > 0
+    assert 'blklot' not in content['data']['parcels'][0]['attributes']
+    assert content['data']['parcels'][0]['attributes']['block_num'] == '3512'
+    assert content['data']['parcels'][0]['attributes']['lot_num'] == '008'
+    assert isinstance(content['data']['parcels'][0]['geometry']['rings'], list)
+
+def test_get_fields_by_parcel_no_result_example(client):
+    """Test get_fields_by_parcel no results"""
+    parcel = 'ABCDEFG'
+
+    response = client.simulate_get(
+        '/page/get_fields_by_parcel_example',
+        params={'parcel':parcel, 'returnGeometry':False})
+    assert response.status_code == 200
+
+    content = json.loads(response.content)
+
+    assert jsend.is_success(content)
+    assert len(content['data']['parcels']) == 0

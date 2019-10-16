@@ -68,6 +68,31 @@ class SfArcgis():
                         parcels = response['features']
         return parcels
 
+    def get_fields_by_parcel(self, blklot, options=None):
+        """ get fields by parcel number from Planning ArcGIS """
+        parcels = {}
+
+        # validate it has proper layer set
+        if self.has_missing_layers(['parcel']):
+            self.print_error("missing parcel layer")
+            return False
+
+        url = urllib.parse.urljoin(self.gis_layers.get('parcel')+'/', 'query')
+        params = self.parcel_param_default
+        if options:
+            if 'outFields' in options:
+                params['outFields'] = options['outFields']
+            if 'returnGeometry' in options:
+                params['returnGeometry'] = options['returnGeometry']
+
+        where = "blklot='"+blklot+"'"
+        params['where'] = where
+        response = self.query(url, params)
+        if response and 'features' in response and response['features']:
+            parcels = response['features']
+
+        return parcels
+
     def query(self, url, params):
         """ Queries an url """
         response = {}

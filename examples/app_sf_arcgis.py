@@ -36,8 +36,28 @@ class Page():
                 options['returnSuggestions'] = True
             if 'returnGeometry' in req.params:
                 options['returnGeometry'] = req.params['returnGeometry']
+            if 'outFields' in req.params:
+                options['outFields'] = req.params['outFields']
             self.sfarcgis.set_layer('parcel', os.environ.get('PLN_ARCGIS_PARCEL_LAYER_URL'))
             parcels = self.sfarcgis.get_fields_by_address(address, options)
+            response = {'parcels': parcels}
+        resp.body = json.dumps(jsend.success(response))
+        resp.status = falcon.HTTP_200
+
+    def get_fields_by_parcel_example(self, req, resp):
+        """ example get_fields_by_parcel with an parcel number response """
+
+        self.sfarcgis.set_layer('parcel', os.environ.get('PLN_ARCGIS_PARCEL_LAYER_URL'))
+
+        if 'parcel' in req.params:
+            parcel = req.params['parcel']
+            options = {'returnGeometry':False}
+            if 'returnGeometry' in req.params:
+                options['returnGeometry'] = req.params['returnGeometry']
+            if 'outFields' in req.params:
+                options['outFields'] = req.params['outFields']
+            self.sfarcgis.set_layer('parcel', os.environ.get('PLN_ARCGIS_PARCEL_LAYER_URL'))
+            parcels = self.sfarcgis.get_fields_by_parcel(parcel, options)
             response = {'parcels': parcels}
         resp.body = json.dumps(jsend.success(response))
         resp.status = falcon.HTTP_200

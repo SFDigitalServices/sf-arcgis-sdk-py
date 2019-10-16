@@ -32,6 +32,18 @@ def test_get_fields_by_address():
             'returnGeometry':'false', 'f':'json'
         }
         parcel = sfarcgis.get_fields_by_address('600 MONTGOMERY ST #100', options)
+    assert parcel == mock_data
+
+def test_get_fields_by_parcel():
+    """ test get_fields_by_parcel method """
+    with open('tests/mocks/parcel_request.json', 'r') as file_obj:
+        mock_request = json.load(file_obj)
+
+    with open('tests/mocks/parcel.json', 'r') as file_obj:
+        mock_data = json.load(file_obj)
+
+    sfarcgis = SfArcgis()
+    sfarcgis.set_layer("parcel", TEST_ARCGIS_LAYER_URL)
 
     with patch('sf_arcgis_sdk.sf_arcgis.requests.get') as mock_get:
         mock_get.return_value.status_code = 200
@@ -40,7 +52,7 @@ def test_get_fields_by_address():
             'outFields':'blklot,block_num,lot_num,ADDRESS',
             'returnGeometry':'false', 'f':'json'
         }
-        parcel = sfarcgis.get_fields_by_address('600 MONTGOMERY ST #100', options)
+        parcel = sfarcgis.get_fields_by_parcel('3512008', options)
     assert parcel == mock_data
 
 def test_get_fields_by_address_missing_layer():
@@ -48,6 +60,13 @@ def test_get_fields_by_address_missing_layer():
         missing layer state """
     test = SfArcgis()
     parcel = test.get_fields_by_address('600 MONTGOMERY ST #100')
+    assert parcel is False
+
+def test_get_fields_by_parcel_missing_layer():
+    """ test get_fields_by_parcel method
+        missing layer state """
+    test = SfArcgis()
+    parcel = test.get_fields_by_parcel('3512008')
     assert parcel is False
 
 def test_query():
