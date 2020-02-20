@@ -19,7 +19,7 @@ Boilerplate for making your own SDK in Python
 Start up example app
 > pipenv run gunicorn --reload 'examples.app:run()'
 
-Run test for example app
+## Run test for example app
 > pipenv run python -m pytest examples/ --cov=examples/ --cov-report term-missing
 
 

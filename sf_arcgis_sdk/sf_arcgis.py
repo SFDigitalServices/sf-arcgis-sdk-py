@@ -1,5 +1,6 @@
 """ SF ArcGIS SDK module """
 import math
+import re
 import json
 import urllib
 import requests
@@ -19,6 +20,7 @@ class SfArcgis():
         """ Sets a GIS layer """
         self.gis_layers[name] = url
 
+    # pylint: disable=too-many-branches
     def get_fields_by_address(self, address, options=None):
         """ get fields by address from Planning ArcGIS """
         parcels = {}
@@ -27,6 +29,9 @@ class SfArcgis():
         if self.has_missing_layers(['parcel']):
             self.print_error("missing parcel layer")
             return False
+
+        # replace number sign with unit so OccupancyIdentifier can be populated
+        address = address.upper().replace("#", "UNIT ")
 
         addr = usaddress.tag(address)
 
@@ -40,32 +45,38 @@ class SfArcgis():
                 params['returnGeometry'] = options['returnGeometry']
 
         if 'AddressNumber' in addr[0] and 'StreetName' in addr[0]:
+
+            street_name = self.get_street_name(addr[0])
+
             where = "base_address_num="+ addr[0]['AddressNumber']
-            where += " and street_name='"+addr[0]['StreetName'].upper()+"'"
+            where += " and street_name='"+street_name+"'"
             if 'OccupancyIdentifier' in addr[0]:
                 where += " and unit_address='"+addr[0]['OccupancyIdentifier'].upper()+"'"
             params['where'] = where
             response = self.query(url, params)
             if response and 'features' in response and response['features']:
                 parcels = response['features']
-            elif response is not None and options and options['returnSuggestions']:
+            elif response is not None:
                 # auto suggestions
-                if 'OccupancyIdentifier' in addr[0]:
-                    where = "base_address_num="+ addr[0]['AddressNumber']
-                    where += " and street_name='"+addr[0]['StreetName'].upper()+"'"
-                    params['where'] = where
-                    response = self.query(url, params)
-                    if response and 'features' in response and response['features']:
-                        parcels = response['features']
-                if not parcels:
-                    base_num = math.floor(int(addr[0]['AddressNumber'])/100)*100
-                    where = "base_address_num >=" + str(base_num)
-                    where += " and base_address_num <"+str(base_num+100)
-                    where += " and street_name='"+addr[0]['StreetName'].upper()+"'"
-                    params['where'] = where
-                    response = self.query(url, params)
-                    if response and 'features' in response and response['features']:
-                        parcels = response['features']
+                if options and options['returnSuggestions']:
+                # try without OccupancyIdentifier
+                    if 'OccupancyIdentifier' in addr[0]:
+                        where = "base_address_num="+ addr[0]['AddressNumber']
+                        where += " and street_name='"+street_name+"'"
+                        params['where'] = where
+                        response = self.query(url, params)
+                        if response and 'features' in response and response['features']:
+                            parcels = response['features']
+                    if not parcels:
+                        # try look up and down the block
+                        base_num = math.floor(int(addr[0]['AddressNumber'])/100)*100
+                        where = "base_address_num >=" + str(base_num)
+                        where += " and base_address_num <"+str(base_num+100)
+                        where += " and street_name='"+addr[0]['StreetName'].upper()+"'"
+                        params['where'] = where
+                        response = self.query(url, params)
+                        if response and 'features' in response and response['features']:
+                            parcels = response['features']
         return parcels
 
     def get_fields_by_parcel(self, blklot, options=None):
@@ -86,7 +97,7 @@ class SfArcgis():
                 params['returnGeometry'] = options['returnGeometry']
 
         where = "blklot='"+blklot+"'"
-        params['where'] = where
+        params["where"] = where
         response = self.query(url, params)
         if response and 'features' in response and response['features']:
             parcels = response['features']
@@ -121,3 +132,53 @@ class SfArcgis():
     def print_error(self, msg):
         """ Prints error message """
         print(type(self).__name__ + ": "+str(msg))
+
+    @staticmethod
+    def get_street_name(addr):
+        """ Return street name from address """
+        street_name = addr['StreetName']
+        street_name = re.sub('[^0-9a-zA-Z ]+', '', street_name)
+
+        # numbered street names
+        mapping = [
+            ('01ST', ['1ST', 'FIRST']),
+            ('02ND', ['2ND', 'SECOND']),
+            ('03RD', ['3RD', 'THIRD']),
+            ('04TH', ['4TH', 'FOURTH']),
+            ('05TH', ['5TH', 'FIFTH']),
+            ('06TH', ['6TH', 'SIXTH']),
+            ('07TH', ['7TH', 'SEVENTH']),
+            ('08TH', ['8TH', 'EIGHTH']),
+            ('09TH', ['9TH', 'NINTH']),
+            ('10TH', ['TENTH'])
+        ]
+        for key, vals in mapping:
+            for val in vals:
+                if street_name == val:
+                    street_name = street_name.replace(val, key)
+
+        # special exception for BayShore
+        street_name = street_name.replace('BAYSHORE', 'BAY SHORE')
+
+        # concat StreetNamePreType
+        if 'StreetNamePreType' in addr:
+            street_name = addr['StreetNamePreType'] + " " + street_name
+
+        # directionals
+        if 'StreetNamePreDirectional' in addr or 'StreetNamePostDirectional' in addr:
+            # concat StreetNamePreDirectional
+            if 'StreetNamePreDirectional' in addr:
+                street_name = addr['StreetNamePreDirectional'] + " " + street_name
+
+            mapping = [
+                ('N', 'NORTH'),
+                ('S', 'SOUTH'),
+                ('W', 'WEST'),
+                ('E', 'EAST')
+                ]
+            for key, val in mapping:
+                street_name = (" "+street_name+" ").replace(" "+key+" ", " "+val+" ")
+
+        street_name = " ".join(street_name.split()).strip()
+
+        return street_name
